@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { BadRequestError, NotFoundError } from './core/ApiError.js';
 import Product from './models/Products.js';
+import Review from './models/Review.js'; // Ensure this model exists and is imported
 const app = express();
 app.use(express.json());
 app.use(cors({
@@ -51,12 +52,11 @@ app.post('/products', asyncHandler(async (req, res) => {
 
     res.status(201).json(product);
 }));
-
 /* ---------- GET single product ---------- */
 app.get('/products/:productId', asyncHandler(async (req, res) => {
     const { productId } = req.params;
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate('reviews');
 
     if (!product) {
         throw new NotFoundError('Product not found');
@@ -95,7 +95,21 @@ app.delete('/products/:productId', asyncHandler(async (req, res) => {
 
     res.json({ message: 'Product deleted successfully' });
 }));
-
+/* -------------------- Review Routes -------------------- */
+app.post('/products/:productId/reviews', asyncHandler(async (req, res) => {
+    const {productId}=req.params;
+    const{rating,review}=req.body;
+    const product=await Product.findById(productId);
+    if(!product){
+        throw new NotFoundError('Product not found');
+    }
+    const newReview=await Review.create({
+        rating,
+        review})
+    product.reviews.push(newReview._id);
+    await product.save();
+    res.json({message:'Review added successfully'});
+}));
 /* -------------------- 404 Route -------------------- */
 app.use((req, res, next) => {
     next(new NotFoundError('Route not found'));

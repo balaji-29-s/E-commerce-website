@@ -10,13 +10,17 @@ const productSchema = new mongoose.Schema({
         min:0,
         required:true
     },
-    images:{
-        type: String
-    },
     description:{
         type:String,
         required:true
     },
+    image:{
+        type: String
+    },
+    reviews:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Review'
+    }]
     
 },{timestamps:true, versionKey:false});
 

@@ -9,12 +9,13 @@ const ProductList = (props) => {
                 {
                     props.products.map((product) => {
                         return(
-                        <Grid  key={product._id} size={{ xs: 12, sm: 12, md: 6, lg: 3 }}>
+                        <Grid  key={product._id || product.id} size={{ xs: 12, sm: 12, md: 6, lg: 3 }}>
                             <Product
+                                id={product._id || product.id}
                                 title={product.title}
                                 price={product.price}
                                 description={product.description}
-                                image={product.image}
+                                image={product.image || product.images}
                             />
                         </Grid>)
                     })
