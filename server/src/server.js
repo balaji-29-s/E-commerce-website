@@ -1,9 +1,15 @@
+import bcrypt from 'bcrypt';
 import cors from 'cors';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { BadRequestError, NotFoundError } from './core/ApiError.js';
+import { AuthenticationError, BadRequestError, NotFoundError } from './core/ApiError.js';
+import { isLoggedIn } from './middleware/auth.js';
 import Product from './models/Products.js';
 import Review from './models/Review.js'; // Ensure this model exists and is imported
+import User from './models/User.js';
+const JWT_SECRET="FD86118B3687B5773B193B215274F";
+
 const app = express();
 app.use(express.json());
 app.use(cors({
@@ -110,6 +116,45 @@ app.post('/products/:productId/reviews', asyncHandler(async (req, res) => {
     await product.save();
     res.json({message:'Review added successfully'});
 }));
+/* -------------------- Authentication Routes -------------------- */
+//register route
+app.post('/register',async(req,res)=>{
+    const{username,email,password,role}=req.body;
+    const user=await User.findOne({username});
+    if(user){
+        throw new BadRequestError('Username already exists');
+    }
+    const hash=await bcrypt.hash(password,12);
+    const newUser=await User.create({
+        username,
+        email,
+        password:hash,
+        role
+    });
+    res.status(201).json({message:'User registered successfully'});
+});
+//login route
+app.post('/login',async(req,res)=>{
+    const {username,password}=req.body;
+    const user = await User.findOne({ username });
+    if(!user){
+        throw new AuthenticationError('Invalid username or password');
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if(!isMatch){
+        throw new AuthenticationError('Invalid username or password');
+    }
+    const token=jwt.sign({userId:user._id},JWT_SECRET);
+    res.status(200).json({token});
+});
+app.get('/profile', isLoggedIn, async(req, res) => {
+    const { userId } = req;
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+        throw new BadRequestError('Invalid UserId');
+    }
+    res.json(user);;
+})
 /* -------------------- 404 Route -------------------- */
 app.use((req, res, next) => {
     next(new NotFoundError('Route not found'));
