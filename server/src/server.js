@@ -102,27 +102,30 @@ app.delete('/products/:productId', asyncHandler(async (req, res) => {
     res.json({ message: 'Product deleted successfully' });
 }));
 /* -------------------- Review Routes -------------------- */
-app.post('/products/:productId/reviews', asyncHandler(async (req, res) => {
+app.post('/products/:productId/reviews', isLoggedIn, asyncHandler(async (req, res) => {
     const {productId}=req.params;
-    const{rating,review}=req.body;
+    const { rating, review } = req.body;
+    const { userId } = req; // Get userId from the request (set by isLoggedIn middleware)
     const product=await Product.findById(productId);
     if(!product){
         throw new NotFoundError('Product not found');
     }
     const newReview=await Review.create({
         rating,
-        review})
+        review,
+        user: userId // Associate the review with the user
+    })
     product.reviews.push(newReview._id);
     await product.save();
     res.json({message:'Review added successfully'});
 }));
 /* -------------------- Authentication Routes -------------------- */
 //register route
-app.post('/register',async(req,res)=>{
-    const{username,email,password,role}=req.body;
-    const user=await User.findOne({username});
+app.post('/register', asyncHandler(async (req, res) => {
+    const { username, email, password, role } = req.body;
+    const user = await User.findOne({ $or: [{ username }, { email }] });
     if(user){
-        throw new BadRequestError('Username already exists');
+        throw new BadRequestError('Username or Email already exists');
     }
     const hash=await bcrypt.hash(password,12);
     const newUser=await User.create({
@@ -132,10 +135,10 @@ app.post('/register',async(req,res)=>{
         role
     });
     res.status(201).json({message:'User registered successfully'});
-});
+}));
 //login route
-app.post('/login',async(req,res)=>{
-    const {username,password}=req.body;
+app.post('/login', asyncHandler(async (req, res) => {
+    const { username, password } = req.body;
     const user = await User.findOne({ username });
     if(!user){
         throw new AuthenticationError('Invalid username or password');
@@ -146,15 +149,15 @@ app.post('/login',async(req,res)=>{
     }
     const token=jwt.sign({userId:user._id},JWT_SECRET);
     res.status(200).json({token});
-});
-app.get('/profile', isLoggedIn, async(req, res) => {
+}));
+app.get('/profile', isLoggedIn, asyncHandler(async (req, res) => {
     const { userId } = req;
     const user = await User.findById(userId).select('-password');
     if (!user) {
         throw new BadRequestError('Invalid UserId');
     }
-    res.json(user);;
-})
+    res.json(user);
+}));
 /* -------------------- 404 Route -------------------- */
 app.use((req, res, next) => {
     next(new NotFoundError('Route not found'));

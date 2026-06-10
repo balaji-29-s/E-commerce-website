@@ -13,13 +13,16 @@ import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
-import * as React from 'react';
+import { useContext, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { UserContext } from '../store/user-context';
+
 const drawerWidth = 240;
 
 function Header(props) {
     const { window } = props;
-    const [mobileOpen, setMobileOpen] = React.useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const { isAuthenticated, user, logout } = useContext(UserContext);
 
     const handleDrawerToggle = () => {
         setMobileOpen((prevState) => !prevState);
@@ -42,11 +45,26 @@ function Header(props) {
                         <ListItemText primary="Cart" />
                     </ListItemButton>
                 </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton component={NavLink} to="/login" sx={{ textAlign: 'center' }}>
-                        <ListItemText primary="Login" />
-                    </ListItemButton>
-                </ListItem>
+                {isAuthenticated ? (
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={logout} sx={{ textAlign: 'center' }}>
+                            <ListItemText primary="Logout" />
+                        </ListItemButton>
+                    </ListItem>
+                ) : (
+                    <>
+                        <ListItem disablePadding>
+                            <ListItemButton component={NavLink} to="/login" sx={{ textAlign: 'center' }}>
+                                <ListItemText primary="Login" />
+                            </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                            <ListItemButton component={NavLink} to="/register" sx={{ textAlign: 'center' }}>
+                                <ListItemText primary="Register" />
+                            </ListItemButton>
+                        </ListItem>
+                    </>
+                )}
             </List>
         </Box>
     );
@@ -81,9 +99,21 @@ function Header(props) {
                         <Button component={NavLink} to="/cart" sx={{ color: '#fff' }}>
                             Cart
                         </Button>
-                        <Button component={NavLink} to="/login" sx={{ color: '#fff' }}>
-                            Login
-                        </Button>
+                        {isAuthenticated ? (
+                            <>
+                                <Button sx={{ color: '#fff', fontWeight: 'bold' }}>{user?.username}</Button>
+                                <Button onClick={logout} sx={{ color: '#fff' }}>Logout</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button component={NavLink} to="/login" sx={{ color: '#fff' }}>
+                                    Login
+                                </Button>
+                                <Button component={NavLink} to="/register" sx={{ color: '#fff' }}>
+                                    Register
+                                </Button>
+                            </>
+                        )}
                     </Box>
                 </Toolbar>
             </AppBar>

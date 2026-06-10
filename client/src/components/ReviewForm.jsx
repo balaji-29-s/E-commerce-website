@@ -8,6 +8,8 @@ const ReviewForm = (props) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         props.createReview(rating, review);
+        setRating(0);
+        setReview("");
     };
 
     return (
